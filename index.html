@@ -1,47 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-  <title>AI Chord Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chord Generator | 灵感和弦生成器</title>
+    <style>
+        /* 这里的 CSS 让网页瞬间变高级 */
+        :root {
+            --primary-color: #6366f1;
+            --bg-color: #f8fafc;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        h1 { color: #1e293b; margin-bottom: 1.5rem; font-size: 1.5rem; }
+
+        select, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button:hover {
+            background-color: #4f46e5;
+            transform: translateY(-2px);
+        }
+
+        #result-container {
+            margin-top: 2rem;
+            min-height: 80px;
+        }
+
+        .chord-tag {
+            display: inline-block;
+            background: #eef2ff;
+            color: var(--primary-color);
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border: 1px solid #c7d2fe;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .copy-btn {
+            margin-top: 15px;
+            background-color: #10b981;
+            font-size: 0.8rem;
+            padding: 8px;
+        }
+    </style>
 </head>
 <body>
-  <h1>🎵 AI Chord Generator</h1>
 
-  <label>Mood:</label>
-  <select id="mood">
-    <option value="happy">Happy</option>
-    <option value="sad">Sad</option>
-  </select>
+<div class="card">
+    <h1>🎵 AI Chord Generator</h1>
+    
+    <div style="text-align: left;">
+        <label style="font-weight: bold; color: #64748b;">选择情绪 Mood:</label>
+        <select id="mood">
+            <option value="happy">🌞 欢快 Happy</option>
+            <option value="sad">🌙 忧伤 Sad</option>
+            <option value="jazz">☕ 爵士 Jazz</option>
+            <option value="dark">🔥 黑暗 Dark</option>
+        </select>
+    </div>
 
-  <br><br>
+    <button onclick="generateChords()">生成新灵感</button>
 
-  <button onclick="generateChords()">Generate</button>
+    <div id="result-container">
+        <div id="result"></div>
+        <button id="copyBtn" class="copy-btn" style="display: none;" onclick="copyChords()">复制和弦序列</button>
+    </div>
+</div>
 
-  <h2 id="result"></h2>
-
-  <script>
+<script>
     function generateChords() {
-      const mood = document.getElementById("mood").value;
+        const mood = document.getElementById("mood").value;
+        const resultDiv = document.getElementById("result");
+        const copyBtn = document.getElementById("copyBtn");
 
-      let chords;
+        let options = [];
 
-      if (mood === "happy") {
-        const options = [
-          ["C", "G", "Am", "F"],
-          ["D", "A", "Bm", "G"],
-          ["G", "D", "Em", "C"]
-        ];
-        chords = options[Math.floor(Math.random() * options.length)];
-      } else {
-        const options = [
-          ["Am", "F", "C", "G"],
-          ["Em", "C", "G", "D"],
-          ["Dm", "Bb", "F", "C"]
-        ];
-        chords = options[Math.floor(Math.random() * options.length)];
-      }
+        // 扩充了和弦库
+        if (mood === "happy") {
+            options = [["C", "G", "Am", "F"], ["G", "D", "Em", "C"], ["D", "A", "Bm", "G"]];
+        } else if (mood === "sad") {
+            options = [["Am", "F", "C", "G"], ["Em", "C", "G", "D"], ["Fm", "Db", "Ab", "Eb"]];
+        } else if (mood === "jazz") {
+            options = [["Cmaj7", "Am7", "Dm7", "G7"], ["Fmaj7", "Bb7", "Em7", "A7"], ["Dm7", "G7", "Cmaj7", "A7"]];
+        } else if (mood === "dark") {
+            options = [["Am", "E", "F", "E"], ["Cm", "G#", "G", "Cm"], ["Bbm", "F", "Gb", "F"]];
+        }
 
-      document.getElementById("result").innerText = chords.join(" - ");
+        const chords = options[Math.floor(Math.random() * options.length)];
+        
+        // 动态生成和弦卡片
+        resultDiv.innerHTML = chords.map(c => `<span class="chord-tag">${c}</span>`).join("");
+        
+        // 显示复制按钮
+        copyBtn.style.display = "block";
+        copyBtn.innerText = "复制和弦序列";
     }
-  </script>
+
+    function copyChords() {
+        const chords = Array.from(document.querySelectorAll('.chord-tag')).map(el => el.innerText).join(" - ");
+        navigator.clipboard.writeText(chords).then(() => {
+            document.getElementById("copyBtn").innerText = "✅ 已复制到剪贴板";
+        });
+    }
+</script>
+
 </body>
 </html>
