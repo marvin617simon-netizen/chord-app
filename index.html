@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Chord Generator</title>
+</head>
+<body>
+  <h1>🎵 AI Chord Generator</h1>
+
+  <label>Mood:</label>
+  <select id="mood">
+    <option value="happy">Happy</option>
+    <option value="sad">Sad</option>
+  </select>
+
+  <br><br>
+
+  <button onclick="generateChords()">Generate</button>
+
+  <h2 id="result"></h2>
+
+  <script>
+    function generateChords() {
+      const mood = document.getElementById("mood").value;
+
+      let chords;
+
+      if (mood === "happy") {
+        const options = [
+          ["C", "G", "Am", "F"],
+          ["D", "A", "Bm", "G"],
+          ["G", "D", "Em", "C"]
+        ];
+        chords = options[Math.floor(Math.random() * options.length)];
+      } else {
+        const options = [
+          ["Am", "F", "C", "G"],
+          ["Em", "C", "G", "D"],
+          ["Dm", "Bb", "F", "C"]
+        ];
+        chords = options[Math.floor(Math.random() * options.length)];
+      }
+
+      document.getElementById("result").innerText = chords.join(" - ");
+    }
+  </script>
+</body>
+</html>
