@@ -52,7 +52,6 @@
         }
         .main-btn:active { transform: scale(0.98); }
         
-        /* New Styles for Options List */
         #result-list {
             margin-top: 1.5rem;
             display: flex;
@@ -71,7 +70,6 @@
             opacity: 0;
             transform: translateY(10px);
         }
-        /* Staggered animation delays for the rows */
         .option-row:nth-child(1) { animation-delay: 0.1s; }
         .option-row:nth-child(2) { animation-delay: 0.2s; }
         .option-row:nth-child(3) { animation-delay: 0.3s; }
@@ -101,6 +99,7 @@
             cursor: pointer;
             margin-left: 10px;
             transition: 0.2s;
+            min-width: 90px;
         }
         .play-btn:hover { background: #059669; }
         .play-btn:active { transform: scale(0.95); }
@@ -127,14 +126,12 @@
 </div>
 
 <script>
-    // Audio Setup
     const synth = new Tone.PolySynth(Tone.Synth).toDestination();
     synth.set({
         oscillator: { type: "triangle" },
         envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 1.2 }
     });
 
-    // Expanded Note Dictionary (Added more chords to support richer progressions)
     const chordNotes = {
         "C": ["C4", "E4", "G4"], "G": ["G3", "B3", "D4"], "Am": ["A3", "C4", "E4"], "F": ["F3", "A3", "C4"],
         "D": ["D4", "Fs4", "A4"], "Em": ["E3", "G3", "B3"], "Bm": ["B3", "D4", "Fs4"], "A": ["A3", "Cs4", "E4"],
@@ -144,88 +141,98 @@
         "Fmaj7": ["F3", "A3", "C4", "E4"], "Em7": ["E3", "G3", "B3", "D4"], "A7": ["A3", "Cs4", "E4", "G4"]
     };
 
-    // Database of Progressions (Some are 4 chords, some are 6 or 8)
     const progressionsDB = {
         "happy": [
-            ["C", "G", "Am", "F"],
-            ["C", "F", "C", "G"],
-            ["D", "A", "Bm", "G"],
-            ["F", "C", "G", "Am"],
-            ["C", "Em", "F", "G", "C", "F", "C", "G"] // 8-chord progression
+            ["C", "G", "Am", "F"], ["C", "F", "C", "G"], ["D", "A", "Bm", "G"], ["F", "C", "G", "Am"],
+            ["C", "Em", "F", "G", "C", "F", "C", "G"] 
         ],
         "sad": [
-            ["Am", "F", "C", "G"],
-            ["Em", "C", "G", "D"],
-            ["Dm", "Bb", "F", "C"],
-            ["Am", "Dm", "G", "C", "F", "Dm", "E", "Am"], // Longer dramatic progression
-            ["Am", "G", "F", "G"]
+            ["Am", "F", "C", "G"], ["Em", "C", "G", "D"], ["Dm", "Bb", "F", "C"],
+            ["Am", "Dm", "G", "C", "F", "Dm", "E", "Am"], ["Am", "G", "F", "G"]
         ],
         "jazz": [
-            ["Cmaj7", "Am7", "Dm7", "G7"],
-            ["Fmaj7", "Em7", "Dm7", "Cmaj7"],
-            ["Dm7", "G7", "Cmaj7", "A7"],
-            ["Am7", "D", "Gmaj7", "Cmaj7"]
+            ["Cmaj7", "Am7", "Dm7", "G7"], ["Fmaj7", "Em7", "Dm7", "Cmaj7"],
+            ["Dm7", "G7", "Cmaj7", "A7"], ["Am7", "D", "Gmaj7", "Cmaj7"]
         ]
     };
+
+    // 【新增核心机制】全局播放 ID，用于打断重叠播放
+    let currentPlayId = 0; 
 
     function generateOptions() {
         const mood = document.getElementById("mood").value;
         const resultList = document.getElementById("result-list");
-        
-        // Clear previous results
         resultList.innerHTML = "";
 
-        // Get the pool of progressions for the selected mood
         let pool = [...progressionsDB[mood]];
-        
-        // Shuffle the array to get random options every time
         pool.sort(() => 0.5 - Math.random());
-        
-        // Pick the top 3 options
         const selectedOptions = pool.slice(0, 3);
 
-        // Render each option to the screen
         selectedOptions.forEach((chordsArray, index) => {
-            // Create the row div
             const row = document.createElement("div");
             row.className = "option-row";
 
-            // Create the chord tags container
             const chordsDiv = document.createElement("div");
             chordsDiv.className = "chords-display";
             chordsDiv.innerHTML = chordsArray.map(c => `<span class="chord-tag">${c}</span>`).join("");
 
-            // Create the Play button
             const playBtn = document.createElement("button");
             playBtn.className = "play-btn";
             playBtn.innerHTML = "▶ Play";
-            // Attach the play function to this specific button
-            playBtn.onclick = () => playProgression(chordsArray);
+            
+            // 点击播放按钮时的交互逻辑
+            playBtn.onclick = () => {
+                // 1. 把所有按钮恢复成绿色 Play
+                document.querySelectorAll('.play-btn').forEach(btn => {
+                    btn.innerHTML = "▶ Play";
+                    btn.style.background = "#10b981";
+                });
+                
+                // 2. 把当前点击的按钮变成蓝色 Playing
+                playBtn.innerHTML = "🎶 Playing";
+                playBtn.style.background = "#6366f1";
+                
+                // 3. 执行播放功能
+                playProgression(chordsArray, playBtn);
+            };
 
-            // Put them together
             row.appendChild(chordsDiv);
             row.appendChild(playBtn);
             resultList.appendChild(row);
         });
     }
 
-    async function playProgression(chordsArray) {
-        // Start audio context (browser requirement)
+    // 播放功能重写为 Async/Await 形式，方便随时中断
+    async function playProgression(chordsArray, btnElement) {
         await Tone.start();
         
-        // Stop any currently playing sounds so they don't overlap
-        synth.releaseAll();
-
-        const now = Tone.now();
+        // 停止当前正在响的声音
+        synth.releaseAll(); 
         
-        // Play each chord in the array
-        chordsArray.forEach((chordName, index) => {
-            // If the chord isn't in our dictionary, default to C
+        // 生成这一轮的专属 ID
+        currentPlayId++;
+        const thisPlayId = currentPlayId;
+
+        // 逐个播放和弦
+        for (let i = 0; i < chordsArray.length; i++) {
+            // 如果在等待期间，用户点击了其他播放按钮，立刻停止当前循环
+            if (currentPlayId !== thisPlayId) return;
+
+            const chordName = chordsArray[i];
             const notes = chordNotes[chordName] || ["C4", "E4", "G4"];
             
-            // Each chord plays for 1 second, separated by 1 second intervals
-            synth.triggerAttackRelease(notes, "2n", now + (index * 1.0));
-        });
+            // 立即播放当前和弦
+            synth.triggerAttackRelease(notes, "2n");
+            
+            // 暂停等待 1 秒（1000毫秒）再弹下一个
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+        
+        // 整个序列播放完后，如果还没被其他点击打断，就把按钮恢复原状
+        if (currentPlayId === thisPlayId) {
+            btnElement.innerHTML = "▶ Play";
+            btnElement.style.background = "#10b981";
+        }
     }
 </script>
 
