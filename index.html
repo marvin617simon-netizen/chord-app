@@ -126,11 +126,8 @@
 </div>
 
 <script>
-    const synth = new Tone.PolySynth(Tone.Synth).toDestination();
-    synth.set({
-        oscillator: { type: "triangle" },
-        envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 1.2 }
-    });
+    // 将合成器设为全局变量，但不在这里立刻创建
+    let synth = null;
 
     const chordNotes = {
         "C": ["C4", "E4", "G4"], "G": ["G3", "B3", "D4"], "Am": ["A3", "C4", "E4"], "F": ["F3", "A3", "C4"],
@@ -156,7 +153,6 @@
         ]
     };
 
-    // 【新增核心机制】全局播放 ID，用于打断重叠播放
     let currentPlayId = 0; 
 
     function generateOptions() {
@@ -180,19 +176,15 @@
             playBtn.className = "play-btn";
             playBtn.innerHTML = "▶ Play";
             
-            // 点击播放按钮时的交互逻辑
             playBtn.onclick = () => {
-                // 1. 把所有按钮恢复成绿色 Play
                 document.querySelectorAll('.play-btn').forEach(btn => {
                     btn.innerHTML = "▶ Play";
                     btn.style.background = "#10b981";
                 });
                 
-                // 2. 把当前点击的按钮变成蓝色 Playing
                 playBtn.innerHTML = "🎶 Playing";
                 playBtn.style.background = "#6366f1";
                 
-                // 3. 执行播放功能
                 playProgression(chordsArray, playBtn);
             };
 
@@ -202,33 +194,39 @@
         });
     }
 
-    // 播放功能重写为 Async/Await 形式，方便随时中断
     async function playProgression(chordsArray, btnElement) {
         await Tone.start();
         
-        // 停止当前正在响的声音
-        synth.releaseAll(); 
+        // 【核心修改点】：发现旧合成器？直接彻底销毁释放内存！
+        if (synth !== null) {
+            synth.releaseAll();
+            synth.dispose(); // 砸烂旧机器，杜绝任何余音残留
+        }
         
-        // 生成这一轮的专属 ID
+        // 买一台全新的合成器
+        synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        synth.set({
+            oscillator: { type: "triangle" },
+            // 把 Release 稍微调短到 0.8，既有回音也不会拖泥带水
+            envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 } 
+        });
+        
         currentPlayId++;
         const thisPlayId = currentPlayId;
 
-        // 逐个播放和弦
         for (let i = 0; i < chordsArray.length; i++) {
-            // 如果在等待期间，用户点击了其他播放按钮，立刻停止当前循环
             if (currentPlayId !== thisPlayId) return;
 
             const chordName = chordsArray[i];
             const notes = chordNotes[chordName] || ["C4", "E4", "G4"];
             
-            // 立即播放当前和弦
-            synth.triggerAttackRelease(notes, "2n");
+            // 立刻发声
+            synth.triggerAttackRelease(notes, "2n", Tone.now());
             
-            // 暂停等待 1 秒（1000毫秒）再弹下一个
+            // 等待 1 秒
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
-        // 整个序列播放完后，如果还没被其他点击打断，就把按钮恢复原状
         if (currentPlayId === thisPlayId) {
             btnElement.innerHTML = "▶ Play";
             btnElement.style.background = "#10b981";
