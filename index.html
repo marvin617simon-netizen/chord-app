@@ -1,22 +1,75 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chord Generator | 听见灵感</title>
+    <title>AI Chord Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <style>
-        :root { --primary: #6366f1; --success: #10b981; }
-        body { font-family: system-ui; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 2.5rem; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        :root { --primary: #6366f1; }
+        body { 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: #f0f2f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            margin: 0; 
+        }
+        .card { 
+            background: white; 
+            padding: 2.5rem; 
+            border-radius: 24px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1); 
+            text-align: center; 
+            width: 350px; 
+        }
         h1 { font-size: 1.4rem; color: #1e293b; margin-bottom: 2rem; }
-        select { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #e2e8f0; margin-bottom: 1rem; cursor: pointer; }
-        button { width: 100%; padding: 14px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 5px; }
+        select { 
+            width: 100%; 
+            padding: 12px; 
+            border-radius: 12px; 
+            border: 2px solid #e2e8f0; 
+            margin-bottom: 1rem; 
+            cursor: pointer; 
+            font-size: 1rem;
+        }
+        button { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: none; 
+            background: var(--primary); 
+            color: white; 
+            font-size: 1rem;
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            margin-top: 5px; 
+        }
         button:active { transform: scale(0.98); }
-        .play-hint { font-size: 0.8rem; color: #94a3b8; margin-top: 10px; }
-        #result { margin-top: 1.5rem; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; min-height: 45px; }
-        .chord-tag { background: #eef2ff; color: var(--primary); padding: 8px 12px; border-radius: 8px; font-weight: bold; border: 1px solid #c7d2fe; animation: pop 0.3s ease; }
-        @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .play-hint { font-size: 0.85rem; color: #94a3b8; margin-top: 12px; }
+        #result { 
+            margin-top: 1.5rem; 
+            display: flex; 
+            justify-content: center; 
+            gap: 8px; 
+            flex-wrap: wrap; 
+            min-height: 45px; 
+        }
+        .chord-tag { 
+            background: #eef2ff; 
+            color: var(--primary); 
+            padding: 8px 12px; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            border: 1px solid #c7d2fe; 
+            animation: pop 0.3s ease; 
+        }
+        @keyframes pop { 
+            from { transform: scale(0.8); opacity: 0; } 
+            to { transform: scale(1); opacity: 1; } 
+        }
     </style>
 </head>
 <body>
@@ -25,13 +78,13 @@
     <h1>🎵 AI Chord Generator</h1>
     
     <select id="mood">
-        <option value="happy">🌞 欢快 Happy</option>
-        <option value="sad">🌙 忧伤 Sad</option>
-        <option value="jazz">☕ 爵士 Jazz</option>
+        <option value="happy">🌞 Happy</option>
+        <option value="sad">🌙 Sad</option>
+        <option value="jazz">☕ Jazz</option>
     </select>
 
-    <button onclick="generateAndPlay()">生成并播放</button>
-    <p class="play-hint">点击按钮将自动演奏和弦序列</p>
+    <button onclick="generateAndPlay()">Generate & Play</button>
+    <p class="play-hint">Click to generate and hear the chords</p>
 
     <div id="result"></div>
 </div>
@@ -57,6 +110,7 @@
     };
 
     async function generateAndPlay() {
+        // Start audio context on user interaction
         await Tone.start();
 
         const mood = document.getElementById("mood").value;
@@ -73,8 +127,10 @@
 
         const chords = options[Math.floor(Math.random() * options.length)];
         
+        // Update UI
         resultDiv.innerHTML = chords.map(c => `<span class="chord-tag">${c}</span>`).join("");
 
+        // Play the sequence
         const now = Tone.now();
         chords.forEach((chordName, index) => {
             const notes = chordNotes[chordName] || ["C4"];
